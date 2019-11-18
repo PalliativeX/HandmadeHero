@@ -1,2 +1,1 @@
-# HandmadeHero
-An educational project without any libraries.
+The link: https://handmadehero.org
