@@ -27,6 +27,9 @@ typedef int32 bool32;
 typedef float real32;
 typedef double real64;
 
+#include "handmade.h"
+#include "handmade.cpp"
+
 struct win32_offscreen_buffer
 {
 	BITMAPINFO Info;
@@ -517,7 +520,12 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CommandLine, int ShowC
 					}
 				}
 
-				RenderWeirdGradient(&GlobalBackbuffer, XOffset, YOffset);
+				game_offscreen_buffer Buffer = {};
+				Buffer.Memory = GlobalBackbuffer.Memory;
+				Buffer.Width = GlobalBackbuffer.Width;
+				Buffer.Height = GlobalBackbuffer.Height;
+				Buffer.Pitch = GlobalBackbuffer.Pitch;
+				GameUpdateAndRender(&Buffer, XOffset, YOffset);
 
 				// NOTE: DirectSound output test
 				DWORD PlayCursor;
@@ -559,10 +567,11 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CommandLine, int ShowC
 				real32 FPS = (real32)PerfCountFrequency / (real32)CounterElapsed;
 				real32 MCPF = (real32)CyclesElapsed / (1000.f * 1000.f);
 
+#if 0
 				char Buffer[256];
 				sprintf(Buffer, "%.01fms/f, %.01f/s, %.01fmc/f \n", MSPerFrame, FPS, MCPF);
 				OutputDebugStringA(Buffer);
-
+#endif
 				LastCounter = EndCounter;
 				LastCycleCount = EndCycleCount;
 			}
