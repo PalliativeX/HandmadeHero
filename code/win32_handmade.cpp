@@ -59,7 +59,89 @@ global_variable x_input_set_state *XInputSetState_ = XInputSetStateStub;
 						LPUNKNOWN pUnkOuter)
 typedef DIRECT_SOUND_CREATE(direct_sound_create);
 
-internal void Win32LoadXInput(void)
+
+internal debug_read_file_result
+DEBUGPlatformReadEntireFile(char* Filename)
+{
+	debug_read_file_result Result = {};
+
+	HANDLE FileHandle = CreateFileA(Filename, GENERIC_READ, FILE_SHARE_READ, 0,  OPEN_EXISTING, 0, 0);
+	if (FileHandle != INVALID_HANDLE_VALUE)
+	{
+		LARGE_INTEGER FileSize;
+		if (GetFileSizeEx(FileHandle, &FileSize))
+		{
+			uint32 FileSize32 = SafeTruncateUInt64(FileSize.QuadPart);
+			Result.Contents = VirtualAlloc(0, FileSize32, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+			if (Result.Contents)
+			{
+				DWORD BytesRead;
+				if (ReadFile(FileHandle, Result.Contents, FileSize32, &BytesRead, 0) &&
+					(FileSize32 == BytesRead))
+				{
+					// NOTE: File read successfully
+					Result.ContentsSize = FileSize32;
+				}
+				else
+				{
+					DEBUGPlatformFreeFileMemory(Result.Contents);
+					Result.Contents = 0;
+				}
+			}
+		}
+		CloseHandle(FileHandle);
+	}
+	else
+	{
+		// TODO: Logging
+	}
+
+	return(Result);
+}
+
+
+internal bool32
+DEBUGPlatformWriteEntireFile(char* Filename, uint32 MemorySize, void* Memory)
+{
+	bool32 Result = false;
+
+	HANDLE FileHandle = CreateFileA(Filename, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
+	if (FileHandle != INVALID_HANDLE_VALUE)
+	{
+		DWORD BytesWritten;
+		if (WriteFile(FileHandle, Memory, MemorySize, &BytesWritten, 0))
+		{
+			// NOTE: File read successfully
+			Result = (BytesWritten == MemorySize);
+		}
+		else
+		{
+			// TODO: Logging
+		}
+
+		CloseHandle(FileHandle);
+	}
+	else
+	{
+		// TODO: Logging
+	}
+
+	return(Result);
+}
+
+
+internal void
+DEBUGPlatformFreeFileMemory(void* Memory)
+{
+	if (Memory)
+	{
+		VirtualFree(Memory, 0, MEM_RELEASE);
+	}
+}
+
+
+internal void
+Win32LoadXInput(void)
 {
 	// TODO: Test on Win 8
 	HMODULE XInputLibrary = LoadLibraryA("xinput1_4.dll");
@@ -95,7 +177,9 @@ internal void Win32LoadXInput(void)
 	}
 }
 
-internal void Win32InitDSound(HWND Window, int32 SamplesPerSecond,
+
+internal void
+Win32InitDSound(HWND Window, int32 SamplesPerSecond,
 							  int32 BufferSize)
 {
 	// NOTE: Load the lib
@@ -163,7 +247,9 @@ internal void Win32InitDSound(HWND Window, int32 SamplesPerSecond,
 	}
 }
 
-internal win32_window_dimension Win32GetWindowDimension(HWND Window)
+
+internal win32_window_dimension
+Win32GetWindowDimension(HWND Window)
 {
 	win32_window_dimension Result;
 
@@ -175,7 +261,9 @@ internal win32_window_dimension Win32GetWindowDimension(HWND Window)
 	return (Result);
 }
 
-internal void Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width,
+
+internal void
+Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width,
 									int Height)
 {
 
@@ -203,7 +291,9 @@ internal void Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width,
 	Buffer->Pitch = Width * BytesPerPixel;
 }
 
-internal void Win32DisplayBufferInWindow(HDC DeviceContext, int WindowWidth,
+
+internal void
+Win32DisplayBufferInWindow(HDC DeviceContext, int WindowWidth,
 										 int WindowHeight,
 										 win32_offscreen_buffer *Buffer)
 {
@@ -212,7 +302,9 @@ internal void Win32DisplayBufferInWindow(HDC DeviceContext, int WindowWidth,
 				  DIB_RGB_COLORS, SRCCOPY);
 }
 
-internal LRESULT CALLBACK Win32MainWindowCallback(HWND Window, UINT Message,
+
+internal LRESULT CALLBACK
+Win32MainWindowCallback(HWND Window, UINT Message,
 												  WPARAM WParam,
 												  LPARAM LParam)
 {
@@ -324,7 +416,9 @@ internal LRESULT CALLBACK Win32MainWindowCallback(HWND Window, UINT Message,
 	return (Result);
 }
 
-internal void Win32ClearBuffer(win32_sound_output *SoundOutput)
+
+internal void
+Win32ClearBuffer(win32_sound_output *SoundOutput)
 {
 	VOID *Region1;
 	DWORD Region1Size;
@@ -351,7 +445,9 @@ internal void Win32ClearBuffer(win32_sound_output *SoundOutput)
 	}
 }
 
-internal void Win32FillSoundBuffer(win32_sound_output *SoundOutput,
+
+internal void
+Win32FillSoundBuffer(win32_sound_output *SoundOutput,
 								   DWORD ByteToLock, DWORD BytesToWrite,
 								   game_sound_output_buffer *SourceBuffer)
 {
@@ -389,7 +485,9 @@ internal void Win32FillSoundBuffer(win32_sound_output *SoundOutput,
 	}
 }
 
-internal void ProcessXInputDigitalButton(DWORD XInputButtonState,
+
+internal void
+ProcessXInputDigitalButton(DWORD XInputButtonState,
 										 DWORD ButtonBit,
 										 game_button_state *OldState,
 										 game_button_state *NewState)
@@ -399,7 +497,9 @@ internal void ProcessXInputDigitalButton(DWORD XInputButtonState,
 		(OldState->EndedDown != NewState->EndedDown) ? 1 : 0;
 }
 
-int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
+
+int CALLBACK
+WinMain(HINSTANCE Instance, HINSTANCE PrevInstance,
 					 LPSTR CommandLine, int ShowCode)
 {
 	LARGE_INTEGER PerfCountFrequencyResult;

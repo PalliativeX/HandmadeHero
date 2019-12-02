@@ -26,9 +26,35 @@
 #define ArrayCount(Array) (sizeof(Array) / sizeof(Array[0]))
 // TODO: Swap, min, max, ... macros?
 
+inline uint32
+SafeTruncateUInt64(uint64 Value)
+{
+	// TODO: Defines for max values (UInt32Max)
+	Assert(Value <= 0xFFFFFFFF);
+	uint32 Result = (uint32)Value;
+	return Result;
+}
+
+
+
 /*
-TODO: Services that the platform layer provides to the game
+NOTE: Services that the platform layer provides to the game
 */
+
+#if HANDMADE_INTERNAL
+	// IMPORTANT: These are not for doing anything in the shipping game -
+	// they are blocking and write doesn't protect against lost data
+	struct debug_read_file_result
+	{
+		uint32 ContentsSize;
+		void* Contents;
+	};
+	internal debug_read_file_result DEBUGPlatformReadEntireFile(char* Filename);
+	internal bool32 DEBUGPlatformWriteEntireFile(char* Filename, uint32 MemorySize, void* Memory);
+	internal void DEBUGPlatformFreeFileMemory(void* Memory);
+#endif
+
+
 
 /*
 NOTE: Services that the game provices to the platform layer
