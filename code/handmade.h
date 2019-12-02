@@ -23,7 +23,7 @@
 #define Gigabytes(Value) (Megabytes(Value) * 1024)
 #define Terabytes(Value) (Gigabytes(Value) * 1024)
 
-#define ArrayCount(Array) (sizeof(Array) / sizeof(Array[0]))
+#define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
 // TODO: Swap, min, max, ... macros?
 
 inline uint32
@@ -32,7 +32,7 @@ SafeTruncateUInt64(uint64 Value)
 	// TODO: Defines for max values (UInt32Max)
 	Assert(Value <= 0xFFFFFFFF);
 	uint32 Result = (uint32)Value;
-	return Result;
+	return (Result);
 }
 
 
