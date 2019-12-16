@@ -48,6 +48,7 @@ struct win32_game_code
 	bool32 IsValid;
 };
 
+#define WIN32_STATE_FILE_NAME_COUNT MAX_PATH
 struct win32_state
 {
 	uint64 TotalSize;
@@ -58,6 +59,9 @@ struct win32_state
 
 	HANDLE PlaybackHandle;
 	int InputPlayingIndex;
+
+	char EXEFileName[WIN32_STATE_FILE_NAME_COUNT];
+	char* OnePastLastEXEFileNameSlash;
 };
 
 #define WIN32_HANDMADE_H

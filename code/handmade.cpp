@@ -9,7 +9,7 @@ GameOutputSound(game_state* GameState, game_sound_output_buffer* SoundBuffer, in
     int16* SampleOut = SoundBuffer->Samples;
     for (int SampleIndex = 0; SampleIndex < SoundBuffer->SampleCount; SampleIndex++)
     {
-#if 0
+#if 1
         real32 SineValue = sinf(GameState->tSine);
         int16 SampleValue = (int16)(SineValue * ToneVolume);
  #else
@@ -39,7 +39,7 @@ RenderWeirdGradient(game_offscreen_buffer* Buffer, int BlueOffset, int GreenOffs
             uint8 Blue = (uint8)(X + BlueOffset);
             uint8 Green = (uint8)(Y + GreenOffset);
 
-            *Pixel++ = ((Green << 16) | Blue);
+            *Pixel++ = ((Green << 0) | Blue);
         }
 
         Row += Buffer->Pitch;
@@ -77,8 +77,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     game_state* GameState = (game_state*)Memory->PermanentStorage;
     if (!Memory->IsInitialized)
     {
-        char* Filename = __FILE__;
-        debug_read_file_result File = Memory->DEBUGPlatformReadEntireFile(Filename);
+        char* FileName = __FILE__;
+        debug_read_file_result File = Memory->DEBUGPlatformReadEntireFile(FileName);
         if (File.Contents)
         {
             Memory->DEBUGPlatformWriteEntireFile("test.out", File.ContentsSize, File.Contents);
