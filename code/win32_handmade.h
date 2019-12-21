@@ -10,6 +10,12 @@ struct win32_offscreen_buffer
 	int BytesPerPixel;
 };
 
+struct win32_window_dimension
+{
+	int Width;
+	int Height;
+};
+
 struct win32_sound_output
 {
 	int SamplesPerSecond;
@@ -18,12 +24,6 @@ struct win32_sound_output
 	DWORD SecondaryBufferSize;
 	DWORD SafetyBytes;
 	real32 tSine;
-};
-
-struct win32_window_dimension
-{
-	int Width;
-	int Height;
 };
 
 struct win32_debug_time_marker
