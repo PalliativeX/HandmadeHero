@@ -196,13 +196,32 @@ typedef GAME_GET_SOUND_SAMPLES(game_get_sound_samples);
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 
+struct tile_map
+{
+    int32 CountX;
+    int32 CountY;
+
+    real32 UpperLeftX;
+    real32 UpperLeftY;
+    real32 TileWidth;
+    real32 TileHeight;
+
+    uint32* Tiles;
+};
+
+struct world
+{
+	int32 TileMapCountX;
+	int32 TileMapCountY;
+
+	tile_map* TileMaps;
+};
+
 struct game_state
 {
 	real32 PlayerX;
 	real32 PlayerY;
 };
-
-
 
 #define HANDMADE_H
 #endif
