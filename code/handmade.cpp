@@ -76,6 +76,39 @@ DrawRectangle(game_offscreen_buffer* Buffer,
 }
 
 
+#pragma pack(push, 1)
+struct bitmap_header
+{
+    uint16 FileType;
+    uint32 FileSize;
+    uint16 Reserved1;
+    uint16 Reserved2;
+    uint32 BitmapOffset;
+    uint32 Size;
+    int32 Width;
+    int32 Height;
+    uint16 Planes;
+    uint16 BitsPerPixel;
+};
+#pragma pack(pop)
+
+internal uint32*
+DEBUGLoadBMP(thread_context* Thread, debug_platform_read_entire_file* ReadEntireFile, char* FileName)
+{
+    uint32* Result = 0;
+
+    debug_read_file_result ReadResult = ReadEntireFile(Thread, FileName);
+    if (ReadResult.ContentsSize != 0)
+    {
+        bitmap_header* Header = (bitmap_header*)ReadResult.Contents;
+        uint32* Pixels = (uint32*)((uint8*)ReadResult.Contents + Header->BitmapOffset);
+        Result = Pixels;
+    }
+
+    return (Result);
+}
+
+
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
     Assert((&Input->Controllers[0].Terminator - &Input->Controllers[0].Buttons[0]) ==
@@ -88,10 +121,12 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     game_state* GameState = (game_state*)Memory->PermanentStorage;
     if (!Memory->IsInitialized)
     {
+        GameState->PixelPointer = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_background.bmp");
+
         GameState->PlayerP.AbsTileX = 1;
         GameState->PlayerP.AbsTileY = 3;
-        GameState->PlayerP.TileRelX = 5.0f;
-        GameState->PlayerP.TileRelY = 5.0f;
+        GameState->PlayerP.OffsetX = 5.0f;
+        GameState->PlayerP.OffsetY = 5.0f;
 
         InitializeArena(&GameState->WorldArena, Memory->PermanentStorageSize - sizeof(game_state),
                         (uint8*)Memory->PermanentStorage + sizeof(game_state));
@@ -146,8 +181,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                 RandomChoice = RandomNumberTable[RandomNumberIndex++] % 3;
             }
 
+            bool32 CreatedZDoor = false;
             if (RandomChoice == 2)
             {
+                CreatedZDoor = true;
                 if (AbsTileZ == 0)
                 {
                     DoorUp = true;
@@ -215,15 +252,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
             DoorLeft = DoorRight;
             DoorBottom = DoorTop;
 
-            if (DoorUp)
+            if (CreatedZDoor)
             {
-                DoorDown = true;
-                DoorUp = false;
-            }
-            else if (DoorDown)
-            {
-                DoorUp = true;
-                DoorDown = false;
+                DoorDown = !DoorDown;
+                DoorUp = !DoorUp;
             }
             else
             {
@@ -306,22 +338,36 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
             dPlayerY *= PlayerSpeed;
 
             tile_map_position NewPlayerP = GameState->PlayerP;
-            NewPlayerP.TileRelX += Input->dtForFrame*dPlayerX;
-            NewPlayerP.TileRelY += Input->dtForFrame*dPlayerY;
+            NewPlayerP.OffsetX += Input->dtForFrame*dPlayerX;
+            NewPlayerP.OffsetY += Input->dtForFrame*dPlayerY;
             NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
 
             tile_map_position PlayerLeft = NewPlayerP;
-            PlayerLeft.TileRelX -= 0.5f*PlayerWidth;
+            PlayerLeft.OffsetX -= 0.5f*PlayerWidth;
             PlayerLeft = RecanonicalizePosition(TileMap, PlayerLeft);
 
             tile_map_position PlayerRight = NewPlayerP;
-            PlayerRight.TileRelX += 0.5f*PlayerWidth;
+            PlayerRight.OffsetX += 0.5f*PlayerWidth;
             PlayerRight = RecanonicalizePosition(TileMap, PlayerRight);
 
             if(IsTileMapPointEmpty(TileMap, NewPlayerP) &&
                IsTileMapPointEmpty(TileMap, PlayerLeft) &&
                IsTileMapPointEmpty(TileMap, PlayerRight))
             {
+                if (!AreOnSameTile(&GameState->PlayerP, &NewPlayerP))
+                {
+                    uint32 NewTileValue = GetTileValue(TileMap, NewPlayerP);
+
+                    if (NewTileValue == 3)
+                    {
+                        ++NewPlayerP.AbsTileZ;
+                    }
+                    else if (NewTileValue == 4)
+                    {
+                        --NewPlayerP.AbsTileZ;
+                    }
+                }
+
                 GameState->PlayerP = NewPlayerP;
             }
         }
@@ -341,27 +387,27 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
             uint32 Row = GameState->PlayerP.AbsTileY + RelRow;
             uint32 TileID = GetTileValue(TileMap, Column, Row, GameState->PlayerP.AbsTileZ);
 
-            if(TileID > 0)
+            if (TileID > 0)
             {
                 real32 Gray = 0.5f;
-                if(TileID == 2)
+                if (TileID == 2)
                 {
                     Gray = 1.0f;
                 }
 
-                if(TileID > 2)
+                if (TileID > 2)
                 {
                     Gray = 0.25f;
                 }
 
-                if((Column == GameState->PlayerP.AbsTileX) &&
+                if ((Column == GameState->PlayerP.AbsTileX) &&
                    (Row == GameState->PlayerP.AbsTileY))
                 {
                     Gray = 0.0f;
                 }
 
-                real32 CenX = ScreenCenterX - MetersToPixels*GameState->PlayerP.TileRelX + ((real32)RelColumn)*TileSideInPixels;
-                real32 CenY = ScreenCenterY + MetersToPixels*GameState->PlayerP.TileRelY - ((real32)RelRow)*TileSideInPixels;
+                real32 CenX = ScreenCenterX - MetersToPixels*GameState->PlayerP.OffsetX + ((real32)RelColumn)*TileSideInPixels;
+                real32 CenY = ScreenCenterY + MetersToPixels*GameState->PlayerP.OffsetY - ((real32)RelRow)*TileSideInPixels;
                 real32 MinX = CenX - 0.5f*TileSideInPixels;
                 real32 MinY = CenY - 0.5f*TileSideInPixels;
                 real32 MaxX = CenX + 0.5f*TileSideInPixels;
@@ -383,6 +429,18 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                   PlayerLeft + MetersToPixels*PlayerWidth,
                   PlayerTop + MetersToPixels*PlayerHeight,
                   PlayerR, PlayerG, PlayerB);
+
+#if 0
+    uint32 *Source = GameState->PixelPointer;
+    uint32 *Dest = (uint32 *)Buffer->Memory;
+    for(int32 Y = 0; Y < Buffer->Height; ++Y)
+    {
+        for(int32 X = 0; X < Buffer->Width; ++X)
+        {
+            *Dest++ = *Source++;
+        }
+    }
+#endif
 }
 
 

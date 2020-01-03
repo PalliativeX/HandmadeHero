@@ -9,9 +9,9 @@ struct tile_map_position
     uint32 AbsTileY;
     uint32 AbsTileZ;
 
-    // TODO: Rename to offset X and Y
-    real32 TileRelX;
-    real32 TileRelY;
+    // NOTE: These are the offsets from tile center
+    real32 OffsetX;
+    real32 OffsetY;
 };
 
 struct tile_chunk_position
