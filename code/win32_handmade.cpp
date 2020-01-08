@@ -4,6 +4,7 @@
 #include <windows.h>
 #include <xinput.h>
 
+#include "handmade_platform.h"
 #include "handmade.h"
 #include "win32_handmade.h"
 
@@ -182,22 +183,25 @@ Win32GetLastWriteTime(char* FileName)
 
 
 internal win32_game_code
-Win32LoadGameCode(char* SourceDLLName, char* TempDLLName)
+Win32LoadGameCode(char* SourceDLLName, char* TempDLLName, char* LockFileName)
 {
 	win32_game_code Result = {};
 
-	// TODO: Need to get the proper path here!
-
-	Result.DllLastWriteTime = Win32GetLastWriteTime(SourceDLLName);
-	CopyFile(SourceDLLName, TempDLLName, FALSE);
-	Result.GameCodeDLL = LoadLibraryA(TempDLLName);
-	if (Result.GameCodeDLL)
+	WIN32_FILE_ATTRIBUTE_DATA Ignored;
+	if (!GetFileAttributesEx(LockFileName, GetFileExInfoStandard, &Ignored))
 	{
-		Result.UpdateAndRender = (game_update_and_render*)GetProcAddress(Result.GameCodeDLL, "GameUpdateAndRender");
-		Result.GetSoundSamples = (game_get_sound_samples*)GetProcAddress(Result.GameCodeDLL, "GameGetSoundSamples");
+		Result.DllLastWriteTime = Win32GetLastWriteTime(SourceDLLName);
+		CopyFile(SourceDLLName, TempDLLName, FALSE);
+		Result.GameCodeDLL = LoadLibraryA(TempDLLName);
+		if (Result.GameCodeDLL)
+		{
+			Result.UpdateAndRender = (game_update_and_render*)GetProcAddress(Result.GameCodeDLL, "GameUpdateAndRender");
+			Result.GetSoundSamples = (game_get_sound_samples*)GetProcAddress(Result.GameCodeDLL, "GameGetSoundSamples");
 
-		Result.IsValid = (Result.UpdateAndRender && Result.GetSoundSamples);
+			Result.IsValid = (Result.UpdateAndRender && Result.GetSoundSamples);
+		}
 	}
+
 
 	if (!Result.IsValid)
 	{
@@ -896,6 +900,10 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CommandLine, int ShowC
 	Win32BuildEXEPathFileName(&Win32State, "handmade_temp.dll",
 							  sizeof(TempGameCodeDLLFullPath), TempGameCodeDLLFullPath);
 
+	char GameCodeLockFullPath[WIN32_STATE_FILE_NAME_COUNT];
+    Win32BuildEXEPathFileName(&Win32State, "lock.tmp",
+                              sizeof(GameCodeLockFullPath), GameCodeLockFullPath);
+
 	LARGE_INTEGER PerfCountFrequencyResult;
 	QueryPerformanceFrequency(&PerfCountFrequencyResult);
 	GlobalPerfCountFrequency = PerfCountFrequencyResult.QuadPart;
@@ -1018,7 +1026,8 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CommandLine, int ShowC
 				bool32 SoundIsValid = false;
 
 				win32_game_code Game = Win32LoadGameCode(SourceGameCodeDLLFullPath,
-														 TempGameCodeDLLFullPath);
+														 TempGameCodeDLLFullPath,
+														 GameCodeLockFullPath);
 				uint32 LoadCounter = 0;
 
 				while (GlobalRunning)
@@ -1031,7 +1040,8 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CommandLine, int ShowC
 					{
 						Win32UnloadGameCode(&Game);
 						Game = Win32LoadGameCode(SourceGameCodeDLLFullPath,
-												 TempGameCodeDLLFullPath);
+												 TempGameCodeDLLFullPath,
+												 GameCodeLockFullPath);
 						LoadCounter = 0;
 					}
 

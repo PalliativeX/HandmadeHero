@@ -10,7 +10,10 @@ call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary
 call cls   REM Used for cleaning up the terminal
 
 del *.pdb > NUL 2> NUL
+
+echo WAITING FOR PDB > lock.tmp
 cl  %CommonCompilerFlags% ..\handmade\code\handmade.cpp -Fmhandmade.map /LD /link -incremental:no -opt:ref -PDB:handmade_%random%.pdb -EXPORT:GameGetSoundSamples -EXPORT:GameUpdateAndRender
+del lock.tmp
 cl  %CommonCompilerFlags% ..\handmade\code\win32_handmade.cpp -Fmwin32_handmade.map /link %CommonLinkerFlags%
 
 popd
