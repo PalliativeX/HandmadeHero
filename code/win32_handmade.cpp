@@ -14,6 +14,8 @@ global_variable bool32 GlobalPause;
 global_variable win32_offscreen_buffer GlobalBackbuffer;
 global_variable LPDIRECTSOUNDBUFFER GlobalSecondaryBuffer;
 global_variable int64 GlobalPerfCountFrequency;
+global_variable bool32 DEBUGGlobalShowCursor;
+global_variable WINDOWPLACEMENT GlobalWindowPosition = { sizeof(GlobalWindowPosition) };
 
 
 // NOTE: Support for XInputGet(Set)State
@@ -378,21 +380,35 @@ internal void
 Win32DisplayBufferInWindow(HDC DeviceContext, int WindowWidth,
 						   int WindowHeight, win32_offscreen_buffer* Buffer)
 {
-	int OffsetX = 10;
-	int OffsetY = 10;
+	// NOTE: Temp measure, to be changed cause not Full HD
+	if ((WindowWidth >= 1680) &&
+		(WindowHeight >= 1050))
+	{
+		StretchDIBits(DeviceContext,
+			  0, 0, WindowWidth, WindowHeight,
+			  0, 0, Buffer->Width, Buffer->Height,
+			  Buffer->Memory,
+			  &Buffer->Info,
+			  DIB_RGB_COLORS, SRCCOPY);
+	}
+	else
+	{	
+		int OffsetX = 10;
+		int OffsetY = 10;
 
-	PatBlt(DeviceContext, 0, 0, WindowWidth, OffsetY, BLACKNESS);
-    PatBlt(DeviceContext, 0, OffsetY + Buffer->Height, WindowWidth, WindowHeight, BLACKNESS);
-    PatBlt(DeviceContext, 0, 0, OffsetX, WindowHeight, BLACKNESS);
-    PatBlt(DeviceContext, OffsetX + Buffer->Width, 0, WindowWidth, WindowHeight, BLACKNESS);
+		PatBlt(DeviceContext, 0, 0, WindowWidth, OffsetY, BLACKNESS);
+    	PatBlt(DeviceContext, 0, OffsetY + Buffer->Height, WindowWidth, WindowHeight, BLACKNESS);
+    	PatBlt(DeviceContext, 0, 0, OffsetX, WindowHeight, BLACKNESS);
+    	PatBlt(DeviceContext, OffsetX + Buffer->Width, 0, WindowWidth, WindowHeight, BLACKNESS);
 
-	// NOTE: Always blitting pixels 1-to-1
-	StretchDIBits(DeviceContext,
-				  OffsetX, OffsetY, Buffer->Width, Buffer->Height,
-				  0, 0, Buffer->Width, Buffer->Height,
-				  Buffer->Memory,
-				  &Buffer->Info,
-				  DIB_RGB_COLORS, SRCCOPY);
+		// NOTE: Always blitting pixels 1-to-1
+		StretchDIBits(DeviceContext,
+					  OffsetX, OffsetY, Buffer->Width, Buffer->Height,
+					  0, 0, Buffer->Width, Buffer->Height,
+					  Buffer->Memory,
+					  &Buffer->Info,
+					  DIB_RGB_COLORS, SRCCOPY);
+	}
 }
 
 
@@ -414,6 +430,19 @@ Win32MainWindowCallback(HWND Window, UINT Message, WPARAM WParam, LPARAM LParam)
 	{
 		// TODO: Handle with a message to user?
 		GlobalRunning = false;
+	}
+	break;
+
+	case WM_SETCURSOR:
+	{
+		if (DEBUGGlobalShowCursor)
+		{
+			Result = DefWindowProcA(Window, Message, WParam, LParam);
+		}
+		else
+		{
+			SetCursor(0);
+		}
 	}
 	break;
 
@@ -665,12 +694,43 @@ Win32PlayBackInput(win32_state* State, game_input* NewInput)
 }
 
 
+internal void 
+ToggleFullscreen(HWND Window)
+{
+	DWORD Style = GetWindowLong(Window, GWL_STYLE);
+	if (Style & WS_OVERLAPPEDWINDOW) 
+	{
+	    MONITORINFO MonitorInfo = { sizeof(MonitorInfo) };
+	    if (GetWindowPlacement(Window, &GlobalWindowPosition) &&
+	        GetMonitorInfo(MonitorFromWindow(Window,
+	        MONITOR_DEFAULTTOPRIMARY), &MonitorInfo)) 
+		{
+	        SetWindowLong(Window, GWL_STYLE,
+	                      Style & ~WS_OVERLAPPEDWINDOW);
+	    	SetWindowPos(Window, HWND_TOP,
+	                     MonitorInfo.rcMonitor.left, MonitorInfo.rcMonitor.top,
+	                     MonitorInfo.rcMonitor.right - MonitorInfo.rcMonitor.left,
+	                     MonitorInfo.rcMonitor.bottom - MonitorInfo.rcMonitor.top,
+	                     SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+	    }
+	} 
+	else 
+	{
+	  	SetWindowLong(Window, GWL_STYLE,
+	                  Style | WS_OVERLAPPEDWINDOW);
+	  	SetWindowPlacement(Window, &GlobalWindowPosition);
+	  	SetWindowPos(Window, NULL, 0, 0, 0, 0,
+	                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+	                 SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+	}
+}
+
 
 internal void
 Win32ProcessPendingMessages(win32_state* State, game_controller_input* KeyboardController)
 {
     MSG Message;
-    while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
+    while (PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
     {
         switch(Message.message)
         {
@@ -693,65 +753,65 @@ Win32ProcessPendingMessages(win32_state* State, game_controller_input* KeyboardC
                     {
 						Win32ProcessKeyboardMessage(&KeyboardController->MoveUp, IsDown);
                     }
-                    else if(VKCode == 'A')
+                    else if (VKCode == 'A')
                     {
 						Win32ProcessKeyboardMessage(&KeyboardController->MoveLeft, IsDown);
                     }
-                    else if(VKCode == 'S')
+                    else if (VKCode == 'S')
                     {
 						Win32ProcessKeyboardMessage(&KeyboardController->MoveDown, IsDown);
                     }
-                    else if(VKCode == 'D')
+                    else if (VKCode == 'D')
                     {
 						Win32ProcessKeyboardMessage(&KeyboardController->MoveRight, IsDown);
                     }
-                    else if(VKCode == 'Q')
+                    else if (VKCode == 'Q')
                     {
                         Win32ProcessKeyboardMessage(&KeyboardController->LeftShoulder, IsDown);
                     }
-                    else if(VKCode == 'E')
+                    else if (VKCode == 'E')
                     {
                         Win32ProcessKeyboardMessage(&KeyboardController->RightShoulder, IsDown);
                     }
-                    else if(VKCode == VK_UP)
+                    else if (VKCode == VK_UP)
                     {
                         Win32ProcessKeyboardMessage(&KeyboardController->ActionUp, IsDown);
                     }
-                    else if(VKCode == VK_LEFT)
+                    else if (VKCode == VK_LEFT)
                     {
                         Win32ProcessKeyboardMessage(&KeyboardController->ActionLeft, IsDown);
                     }
-                    else if(VKCode == VK_DOWN)
+                    else if (VKCode == VK_DOWN)
                     {
                         Win32ProcessKeyboardMessage(&KeyboardController->ActionDown, IsDown);
                     }
-                    else if(VKCode == VK_RIGHT)
+                    else if (VKCode == VK_RIGHT)
                     {
                         Win32ProcessKeyboardMessage(&KeyboardController->ActionRight, IsDown);
                     }
-                    else if(VKCode == VK_ESCAPE)
+                    else if (VKCode == VK_ESCAPE)
                     {
                         Win32ProcessKeyboardMessage(&KeyboardController->Start, IsDown);
                     }
-                    else if(VKCode == VK_SPACE)
+                    else if (VKCode == VK_SPACE)
                     {
 						Win32ProcessKeyboardMessage(&KeyboardController->Back, IsDown);
                     }
 #if HANDMADE_INTERNAL
-                    else if(VKCode == 'P')
+                    else if (VKCode == 'P')
                     {
-                        if(IsDown)
+                        if (IsDown)
                         {
                             GlobalPause = !GlobalPause;
                         }
                     }
-                    else if(VKCode == 'L')
+                    else if (VKCode == 'L')
                     {
                         if(IsDown)
                         {
-                            if(State->InputPlayingIndex == 0)
+                            if (State->InputPlayingIndex == 0)
                             {
-                                if(State->InputRecordingIndex == 0)
+                                if (State->InputRecordingIndex == 0)
                                 {
                                     Win32BeginRecordingInput(State, 1);
                                 }
@@ -768,12 +828,21 @@ Win32ProcessPendingMessages(win32_state* State, game_controller_input* KeyboardC
                         }
                     }
 #endif
-                }
-
-                bool32 AltKeyWasDown = (Message.lParam & (1 << 29));
-                if((VKCode == VK_F4) && AltKeyWasDown)
-                {
-                    GlobalRunning = false;
+					if (IsDown)
+					{
+						bool32 AltKeyWasDown = (Message.lParam & (1 << 29));
+                		if ((VKCode == VK_F4) && AltKeyWasDown)
+                		{
+                		    GlobalRunning = false;
+                		}
+						if ((VKCode == VK_RETURN) && AltKeyWasDown)
+                		{
+							if (Message.hwnd)
+							{
+								ToggleFullscreen(Message.hwnd);
+							}
+                		}
+					}
                 }
             } break;
 
@@ -914,6 +983,9 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CommandLine, int ShowC
 
 	Win32LoadXInput();
 
+#if HANDMADE_INTERNAL
+	DEBUGGlobalShowCursor = true;
+#endif
 	WNDCLASSA WindowClass = {};
 
 	Win32ResizeDIBSection(&GlobalBackbuffer, 960, 540);
@@ -922,6 +994,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CommandLine, int ShowC
 	WindowClass.lpfnWndProc = Win32MainWindowCallback;
 	WindowClass.hInstance = Instance;
 	WindowClass.lpszClassName = "HandmadeHeroWindowClass";
+	WindowClass.hCursor = LoadCursor(0, IDC_ARROW);
 
 	if (RegisterClassA(&WindowClass))
 	{

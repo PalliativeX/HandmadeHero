@@ -17,3 +17,5 @@ del lock.tmp
 cl  %CommonCompilerFlags% ..\handmade\code\win32_handmade.cpp -Fmwin32_handmade.map /link %CommonLinkerFlags%
 
 popd
+
+REM call "C:/dev/build/win32_handmade.exe"
