@@ -19,6 +19,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "handmade_intrinsics.h"
+#include "handmade_math.h"
 #include "handmade_tile.h"
 
 struct memory_arena

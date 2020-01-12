@@ -6,7 +6,7 @@ set CommonLinkerFlags= -incremental:no -opt:ref user32.lib gdi32.lib winmm.lib
 IF NOT EXIST ..\..\build mkdir ..\..\build
 pushd ..\..\build
 
-call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
+call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
 call cls   REM Used for cleaning up the terminal
 
 del *.pdb > NUL 2> NUL
