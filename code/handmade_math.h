@@ -1,21 +1,59 @@
 #if !defined(HANDMADE_MATH_H)
 
-struct v2
+union v2
 {
-    real32 X, Y;
-    real32 &operator[](int Index) { return ((&X)[Index]); }
-
-    inline v2& operator*=(real32 A);
-    inline v2& operator+=(v2 A);
+    struct
+    {
+        real32 X, Y;
+    };
+    real32 E[2];
 };
+
+inline v2
+V2(real32 X, real32 Y)
+{
+    v2 Result;
+
+    Result.X = X;
+    Result.Y = Y;
+
+    return Result;
+}
 
 inline v2
 operator*(real32 A, v2 B)
 {
     v2 Result;
 
-    Result.X = A * B.X;
-    Result.Y = A * B.Y;
+    Result.X = A*B.X;
+    Result.Y = A*B.Y;
+
+    return Result;
+}
+
+inline v2
+operator*(v2 B, real32 A)
+{
+    v2 Result = A*B;
+
+    return Result;
+}
+
+inline v2&
+operator*=(v2& B, real32 A)
+{
+    B = A * B;
+
+    return B;
+}
+
+inline v2
+operator-(v2 A)
+{
+    v2 Result;
+
+    Result.X = -A.X;
+    Result.Y = -A.Y;
 
     return Result;
 }
@@ -31,6 +69,14 @@ operator+(v2 A, v2 B)
     return Result;
 }
 
+inline v2&
+operator+=(v2& A, v2 B)
+{
+    A = A + B;
+
+    return A;
+}
+
 inline v2
 operator-(v2 A, v2 B)
 {
@@ -42,31 +88,12 @@ operator-(v2 A, v2 B)
     return Result;
 }
 
-inline v2
-operator-(v2 A)
+inline real32
+Square(real32 A)
 {
-    v2 Result;
-
-    Result.X = -A.X;
-    Result.Y = -A.Y;
+    real32 Result = A*A;
 
     return Result;
-}
-
-inline v2&
-v2::operator*=(real32 A)
-{
-    *this = A * *this;
-
-    return *this;
-}
-
-inline v2&
-v2::operator+=(v2 A)
-{
-    *this = *this + A;
-
-    return *this;
 }
 
 #define HANDMADE_MATH_H

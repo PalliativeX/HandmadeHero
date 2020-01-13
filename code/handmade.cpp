@@ -464,43 +464,49 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         else
         {
             // NOTE: Use digital movement tuning
-            v2 dPlayer = {};
+            v2 ddPlayer = {};
 
             // TODO: Measure timing
             if (Controller->MoveUp.EndedDown)
             {
                 GameState->HeroFacingDirection = 1;
-                dPlayer.Y = 1.f;
+                ddPlayer.Y = 1.f;
             }
             if (Controller->MoveDown.EndedDown)
             {
                 GameState->HeroFacingDirection = 3;
-                dPlayer.Y = -1.f;
+                ddPlayer.Y = -1.f;
             }
             if (Controller->MoveLeft.EndedDown)
             {
                 GameState->HeroFacingDirection = 2;
-                dPlayer.X = -1.f;
+                ddPlayer.X = -1.f;
             }
             if (Controller->MoveRight.EndedDown)
             {
                 GameState->HeroFacingDirection = 0;
-                dPlayer.X = 1.f;
+                ddPlayer.X = 1.f;
             }
-            real32 PlayerSpeed = 4.f;
+            real32 PlayerSpeed = 10.f;
             if (Controller->ActionUp.EndedDown)
             {
-                PlayerSpeed = 10.f;
+                PlayerSpeed = 30.f;
             }
-            dPlayer *= PlayerSpeed; // NOTE: Both in meters
+            ddPlayer *= PlayerSpeed; // NOTE: Both in meters
 
-            if ((dPlayer.X != 0.f) && (dPlayer.Y != 0.f))
+            if ((ddPlayer.X != 0.f) && (ddPlayer.Y != 0.f))
             {
-                dPlayer *= 0.707106781187f;
+                ddPlayer *= 0.707106781187f;
             }
+
+            // TODO: ODE
+            ddPlayer += 1.5f * -GameState->dPlayerP;
 
             tile_map_position NewPlayerP = GameState->PlayerP;
-            NewPlayerP.Offset += Input->dtForFrame*dPlayer;
+            NewPlayerP.Offset = 0.5f*ddPlayer*Square(Input->dtForFrame) +
+                                GameState->dPlayerP*Input->dtForFrame +
+                                NewPlayerP.Offset;
+            GameState->dPlayerP = ddPlayer*Input->dtForFrame + GameState->dPlayerP;
             NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
 
             tile_map_position PlayerLeft = NewPlayerP;
