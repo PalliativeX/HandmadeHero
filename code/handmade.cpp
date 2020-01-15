@@ -517,9 +517,46 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
             PlayerRight.Offset.X += 0.5f*PlayerWidth;
             PlayerRight = RecanonicalizePosition(TileMap, PlayerRight);
 
-            if(IsTileMapPointEmpty(TileMap, NewPlayerP) &&
-               IsTileMapPointEmpty(TileMap, PlayerLeft) &&
-               IsTileMapPointEmpty(TileMap, PlayerRight))
+            bool32 Collided = false;
+            tile_map_position ColP = {};
+            if (!IsTileMapPointEmpty(TileMap, NewPlayerP))
+            {
+                ColP = NewPlayerP;
+                Collided = true;
+            }
+            if (!IsTileMapPointEmpty(TileMap, PlayerLeft))
+            {
+                ColP = PlayerLeft;
+                Collided = true;
+            }
+            if (!IsTileMapPointEmpty(TileMap, PlayerRight))
+            {
+                ColP = PlayerRight;
+                Collided = true;
+            }
+
+            if (Collided)
+            {
+                v2 r = {0, 0};
+                if (ColP.AbsTileX < GameState->PlayerP.AbsTileX)
+                {
+                    r = v2{1, 0};
+                };
+                if (ColP.AbsTileX > GameState->PlayerP.AbsTileX)
+                {
+                    r = v2{-1, 0};
+                };
+                if (ColP.AbsTileY < GameState->PlayerP.AbsTileY)
+                {
+                    r = v2{0, 1};
+                };
+                if (ColP.AbsTileY > GameState->PlayerP.AbsTileY)
+                {
+                    r = v2{0, -1};
+                }
+                GameState->dPlayerP = GameState->dPlayerP - Inner(GameState->dPlayerP, r) * r;
+            }
+            else
             {
                 if (!AreOnSameTile(&GameState->PlayerP, &NewPlayerP))
                 {
@@ -534,7 +571,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                         --NewPlayerP.AbsTileZ;
                     }
                 }
-
                 GameState->PlayerP = NewPlayerP;
             }
 
