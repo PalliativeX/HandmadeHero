@@ -4,6 +4,27 @@
 // TODO: Implement math functions
 #include "math.h"
 
+inline real32
+AbsoluteValue(real32 Real32)
+{
+    real32 Result = (real32)fabs(Real32);
+    return Result;
+}
+
+inline uint32
+RotateLeft(uint32 Value, int32 Amount)
+{
+    uint32 Result = _rotl(Value, Amount);
+    return Result;
+}
+
+inline uint32
+RotateRight(uint32 Value, int32 Amount)
+{
+    uint32 Result = _rotr(Value, Amount);
+    return Result;
+}
+
 inline int32
 RoundReal32ToInt32(real32 Real32)
 {
@@ -78,7 +99,7 @@ FindLeastSignificantSetBit(uint32 Value)
         }
     }
 #endif
-    
+
     return(Result);
 }
 

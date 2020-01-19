@@ -392,7 +392,7 @@ Win32DisplayBufferInWindow(HDC DeviceContext, int WindowWidth,
 			  DIB_RGB_COLORS, SRCCOPY);
 	}
 	else
-	{	
+	{
 		int OffsetX = 10;
 		int OffsetY = 10;
 
@@ -694,16 +694,16 @@ Win32PlayBackInput(win32_state* State, game_input* NewInput)
 }
 
 
-internal void 
+internal void
 ToggleFullscreen(HWND Window)
 {
 	DWORD Style = GetWindowLong(Window, GWL_STYLE);
-	if (Style & WS_OVERLAPPEDWINDOW) 
+	if (Style & WS_OVERLAPPEDWINDOW)
 	{
 	    MONITORINFO MonitorInfo = { sizeof(MonitorInfo) };
 	    if (GetWindowPlacement(Window, &GlobalWindowPosition) &&
 	        GetMonitorInfo(MonitorFromWindow(Window,
-	        MONITOR_DEFAULTTOPRIMARY), &MonitorInfo)) 
+	        MONITOR_DEFAULTTOPRIMARY), &MonitorInfo))
 		{
 	        SetWindowLong(Window, GWL_STYLE,
 	                      Style & ~WS_OVERLAPPEDWINDOW);
@@ -713,8 +713,8 @@ ToggleFullscreen(HWND Window)
 	                     MonitorInfo.rcMonitor.bottom - MonitorInfo.rcMonitor.top,
 	                     SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 	    }
-	} 
-	else 
+	}
+	else
 	{
 	  	SetWindowLong(Window, GWL_STYLE,
 	                  Style | WS_OVERLAPPEDWINDOW);
@@ -791,11 +791,11 @@ Win32ProcessPendingMessages(win32_state* State, game_controller_input* KeyboardC
                     }
                     else if (VKCode == VK_ESCAPE)
                     {
-                        Win32ProcessKeyboardMessage(&KeyboardController->Start, IsDown);
+                        Win32ProcessKeyboardMessage(&KeyboardController->Back, IsDown);
                     }
                     else if (VKCode == VK_SPACE)
                     {
-						Win32ProcessKeyboardMessage(&KeyboardController->Back, IsDown);
+						Win32ProcessKeyboardMessage(&KeyboardController->Start, IsDown);
                     }
 #if HANDMADE_INTERNAL
                     else if (VKCode == 'P')
